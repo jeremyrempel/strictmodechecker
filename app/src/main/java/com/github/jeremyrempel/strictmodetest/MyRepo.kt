@@ -1,6 +1,8 @@
 package com.github.jeremyrempel.strictmodetest
 
 import android.content.Context
+import android.os.strictmode.DiskReadViolation
+import android.os.strictmode.DiskWriteViolation
 import java.io.OutputStreamWriter
 
 class MyRepo {
@@ -12,7 +14,7 @@ class MyRepo {
         outputStreamWriter.close()
     }
 
-    @IgnoreStrictMode("this is my desc")
+    @SuppressStrictMode("this is my desc", [DiskReadViolation::class, DiskWriteViolation::class])
     fun strictModeViolationIgnore(context: Context) {
         val outputStreamWriter =
             OutputStreamWriter(context.openFileOutput("myfile", Context.MODE_PRIVATE))

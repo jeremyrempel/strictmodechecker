@@ -3,6 +3,7 @@ package com.github.jeremyrempel.strictmodetest
 import android.app.Application
 import android.os.Build
 import android.os.StrictMode
+import android.util.Log
 import java.util.concurrent.Executors
 
 
@@ -19,23 +20,34 @@ class MyApplication : Application() {
                         StrictMode.OnThreadViolationListener { violation ->
 
                             var isIgnore = false
+                            var ignoreReason = ""
 
-                            violation.stackTrace.forEach {
+                            violation.stackTrace.forEach { st ->
                                 if (!isIgnore) {
-                                    val className = it.className
-                                    val methodName = it.methodName
-
+                                    val className = st.className
                                     val clazz = Class.forName(className)
-                                    val methods = clazz.methods.filter { m -> m.name == methodName }
-                                    isIgnore = methods.any { m -> m.isAnnotationPresent(IgnoreStrictMode::class.java) }
+                                    clazz
+                                        .methods
+                                        .filter { it.name == st.methodName }
+                                        .forEach { m ->
+                                            val annotations =
+                                                m.getDeclaredAnnotationsByType(SuppressStrictMode::class.java)
+                                            if (annotations.isNotEmpty()) {
+                                                isIgnore = true
+                                                ignoreReason = annotations[0].reason
+                                            }
+                                        }
                                 }
                             }
 
                             if (isIgnore) {
-                                println("ignoring strict mode violation")
+                                Log.w(
+                                    "jeremy",
+                                    "ignoring strict mode violation, reason: $ignoreReason"
+                                )
                             } else {
                                 // crash
-                                violation.printStackTrace()
+                                Log.e("jeremy", violation.message)
                                 throw RuntimeException("strict mode violation, add to ignore or resolve")
                             }
                         })
